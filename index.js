@@ -25,10 +25,22 @@ async function getObject(bucket, key){
     }
 }
 
-app.get('/:bucket/:id', async(req, res) => { 
+app.get(['/:bucket/:id/:type', '/:bucket/:id'], async(req, res) => { 
     try {
-        if(!req.query.redirect) return res.status(200).json({ "status": 200, "url": await getObject(req.params.bucket, req.params.id, req.query.expires || 84600) });
-        return res.redirect(await getObject(req.params.bucket, req.params.id, req.query.expires || 84600));
+
+        const dateNow = Math.round(Date.now() / 1000);
+        const presignedUrl = await getObject(req.params.bucket, req.params.id, req.query.expires || 84600);
+        
+        switch(req.params.type){
+            case "redirect":
+                return res.redirect(presignedUrl);
+            case "json":
+                return res.status(200).json({ "status": 200, "url": presignedUrl, "time": dateNow });
+            default:
+                return res.status(200).send(presignedUrl);
+        }
+
+
     } catch(err){
         return res.status(400);
     }
